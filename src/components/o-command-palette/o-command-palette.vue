@@ -73,7 +73,18 @@
             :class="{ 'o-command-palette__category-chip--active': search.selectedCategory.value === cat.id }"
             @click="handleSelectCategory(cat.id)"
           >
-            {{ cat.label }}
+            <component
+              :is="cat.icon"
+              v-if="isComponent(cat.icon)"
+              class="o-command-palette__category-icon"
+              :size="12"
+            />
+            <i
+              v-else-if="typeof cat.icon === 'string' && cat.icon.length > 0"
+              :class="cat.icon"
+              class="o-command-palette__category-icon"
+            />
+            <span>{{ cat.label }}</span>
           </button>
         </div>
       </slot>
@@ -93,29 +104,38 @@
               class="o-command-palette__item-icon-box"
               :style="{ borderColor: item.iconColor || brandColor }"
             >
-              <img
-                v-if="item.logoUrl"
-                :src="item.logoUrl"
-                alt=""
-                class="o-command-palette__item-logo"
-              />
-              <i
-                v-else-if="item.icon"
-                :class="item.icon"
-                :style="{ color: item.iconColor || brandColor }"
-              />
-              <svg
-                v-else
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                :style="{ color: item.iconColor || brandColor }"
-              >
-                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-              </svg>
+              <slot name="item-icon" :item="item">
+                <img
+                  v-if="item.logoUrl"
+                  :src="item.logoUrl"
+                  alt=""
+                  class="o-command-palette__item-logo"
+                />
+                <component
+                  :is="item.icon"
+                  v-else-if="isComponent(item.icon)"
+                  class="o-command-palette__item-icon-component"
+                  :size="16"
+                  :style="{ color: item.iconColor || brandColor }"
+                />
+                <i
+                  v-else-if="typeof item.icon === 'string' && item.icon.length > 0"
+                  :class="item.icon"
+                  :style="{ color: item.iconColor || brandColor }"
+                />
+                <svg
+                  v-else
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  :style="{ color: item.iconColor || brandColor }"
+                >
+                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                </svg>
+              </slot>
             </div>
 
             <div class="o-command-palette__item-body">
@@ -198,7 +218,8 @@ const {
   handleItemHover,
   handleItemClick,
   handleKeydown,
-  handleBackdropClick
+  handleBackdropClick,
+  isComponent
 } = useCommandPaletteController(props, emit);
 </script>
 

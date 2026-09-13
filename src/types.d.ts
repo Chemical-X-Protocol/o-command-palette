@@ -8,7 +8,7 @@ export interface CommandItem {
   readonly subtitle?: string;
   readonly category: string;
   readonly categoryLabel: string;
-  readonly icon?: string;
+  readonly icon?: string | any;
   readonly iconColor?: string;
   readonly logoUrl?: string;
   readonly badge?: string;
@@ -27,7 +27,7 @@ export interface CommandItem {
 export interface CommandCategory {
   readonly id: string;
   readonly label: string;
-  readonly icon?: string;
+  readonly icon?: string | any;
 }
 
 export interface SearchProvider {

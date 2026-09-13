@@ -116,6 +116,11 @@ export function useCommandPaletteController(
     closePalette();
   };
 
+  const isComponent = (val: unknown): boolean => {
+    if (!val) return false;
+    return typeof val === 'object' || typeof val === 'function';
+  };
+
   // 5. Watchers
   watch(search.query, () => {
     keyboard.resetIndex();
@@ -159,6 +164,7 @@ export function useCommandPaletteController(
     handleItemHover,
     handleItemClick,
     handleKeydown,
-    handleBackdropClick
+    handleBackdropClick,
+    isComponent
   };
 }
