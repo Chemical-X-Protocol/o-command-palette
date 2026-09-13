@@ -6,15 +6,15 @@
   align-items: flex-start;
   justify-content: center;
   padding: 10vh 1rem 1rem;
-  background: rgba(0, 0, 0, 0.72);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background: rgba(0, 0, 0, 0.82);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
 }
 
 .o-command-palette {
   --palette-brand: #62c9ff;
-  --palette-border: rgba(255, 255, 255, 0.08);
-  --palette-glass-bg: rgba(15, 23, 42, 0.88);
+  --palette-border: rgba(255, 255, 255, 0.12);
+  --palette-glass-bg: rgba(11, 17, 32, 0.96);
 
   position: relative;
   display: flex;
@@ -23,9 +23,11 @@
   max-width: 680px;
   max-height: 80vh;
   background: var(--palette-glass-bg);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
   border: 1px solid var(--palette-border);
   border-radius: 16px;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.75), 0 0 20px rgba(98, 201, 255, 0.12);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.9), 0 0 30px rgba(98, 201, 255, 0.15);
   overflow: hidden;
   color: #f8fafc;
   font-family: inherit;
