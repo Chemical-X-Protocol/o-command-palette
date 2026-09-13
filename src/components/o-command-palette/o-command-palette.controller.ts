@@ -12,7 +12,11 @@ export function useCommandPaletteController(
   // 1. Composables & Stores
   const registry = useCommandRegistry();
   const allItems = computed(() => props.items ?? registry.commands.value);
-  const search = useCommandSearch(allItems);
+  const allProviders = computed(() => [
+    ...(props.providers ?? []),
+    ...registry.providers.value
+  ]);
+  const search = useCommandSearch(allItems, allProviders);
   const keyboard = useKeyboardNavigation();
 
   // 2. Reactive Primitives
@@ -165,6 +169,7 @@ export function useCommandPaletteController(
     handleItemClick,
     handleKeydown,
     handleBackdropClick,
-    isComponent
+    isComponent,
+    isSearching: search.isSearching
   };
 }

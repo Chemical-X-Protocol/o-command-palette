@@ -17,6 +17,7 @@
       <slot name="header" :query="search.query">
         <div class="o-command-palette__header">
           <svg
+            v-if="!isSearching"
             class="o-command-palette__search-icon"
             viewBox="0 0 24 24"
             fill="none"
@@ -27,6 +28,16 @@
           >
             <circle cx="11" cy="11" r="8" />
             <line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+          <svg
+            v-else
+            class="o-command-palette__search-icon o-command-palette__search-icon--spin"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path d="M21 12a9 9 0 1 1-6.219-8.56" />
           </svg>
 
           <input
@@ -195,6 +206,7 @@ const props = withDefaults(defineProps<CommandPaletteProps>(), {
   modelValue: false,
   items: undefined,
   categories: undefined,
+  providers: undefined,
   placeholder: '',
   brandColor: '#62c9ff',
   shortcutLabel: 'Cmd+K',
@@ -219,7 +231,8 @@ const {
   handleItemClick,
   handleKeydown,
   handleBackdropClick,
-  isComponent
+  isComponent,
+  isSearching
 } = useCommandPaletteController(props, emit);
 </script>
 

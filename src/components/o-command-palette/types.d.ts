@@ -1,9 +1,10 @@
-import type { CommandCategory, CommandItem } from '../../types';
+import type { CommandCategory, CommandItem, SearchProvider } from '../../types';
 
 export interface CommandPaletteProps {
   readonly modelValue?: boolean;
   readonly items?: CommandItem[];
   readonly categories?: CommandCategory[];
+  readonly providers?: SearchProvider[];
   readonly placeholder?: string;
   readonly brandColor?: string;
   readonly shortcutLabel?: string;
