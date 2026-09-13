@@ -28,9 +28,9 @@
 
   &--dropdown {
     z-index: -1;
-    background: rgba(0, 0, 0, 0.65);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+    background: transparent;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
   }
 }
 
@@ -57,9 +57,9 @@
 
   &--dropdown {
     max-width: 100%;
-    max-height: min(520px, 75vh);
+    max-height: min(480px, 70vh);
     border-radius: 12px;
-    box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.9), 0 0 25px rgba(98, 201, 255, 0.18);
+    box-shadow: 0 12px 32px -8px rgba(0, 0, 0, 0.7), 0 0 20px rgba(98, 201, 255, 0.12);
   }
 }
 
