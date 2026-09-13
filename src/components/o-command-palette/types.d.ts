@@ -2,6 +2,9 @@ import type { CommandCategory, CommandItem, SearchProvider } from '../../types';
 
 export interface CommandPaletteProps {
   readonly modelValue?: boolean;
+  readonly query?: string;
+  readonly variant?: 'modal' | 'dropdown';
+  readonly hideHeader?: boolean;
   readonly items?: CommandItem[];
   readonly categories?: CommandCategory[];
   readonly providers?: SearchProvider[];
@@ -13,7 +16,9 @@ export interface CommandPaletteProps {
 
 export interface CommandPaletteEmits {
   (e: 'update:modelValue', value: boolean): void;
+  (e: 'update:query', value: string): void;
   (e: 'select', item: CommandItem): void;
   (e: 'execute', item: CommandItem): void;
   (e: 'close'): void;
 }
+

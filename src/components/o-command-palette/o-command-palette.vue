@@ -1,12 +1,19 @@
 <template>
   <div
     v-if="isOpen"
-    class="o-command-palette-backdrop"
-    @click="handleBackdropClick"
+    class="o-command-palette-wrapper"
+    :class="`o-command-palette-wrapper--${variant}`"
   >
+    <div
+      class="o-command-palette-backdrop"
+      :class="{ 'o-command-palette-backdrop--dropdown': variant === 'dropdown' }"
+      @click="handleBackdropClick"
+    />
+
     <div
       ref="dialogRef"
       class="o-command-palette"
+      :class="{ 'o-command-palette--dropdown': variant === 'dropdown' }"
       :style="{ '--palette-brand': brandColor }"
       role="dialog"
       aria-modal="true"
@@ -14,7 +21,7 @@
       @keydown="handleKeydown"
     >
       <!-- Header Slot / Input Bar -->
-      <slot name="header" :query="search.query">
+      <slot v-if="!hideHeader" name="header" :query="search.query">
         <div class="o-command-palette__header">
           <svg
             v-if="!isSearching"
@@ -107,11 +114,30 @@
             v-for="(item, index) in search.filteredItems.value"
             :key="item.id"
             class="o-command-palette__item"
-            :class="{ 'o-command-palette__item--active': index === keyboard.activeIndex.value }"
+            :class="{
+              'o-command-palette__item--active': index === keyboard.activeIndex.value,
+              'o-command-palette__item--with-card-bg': isCardItem(item) && Boolean(item.logoUrl)
+            }"
+            :style="getItemCardStyle(item)"
             @mouseenter="handleItemHover(index)"
             @click="handleItemClick(item)"
           >
+            <!-- Portrait Card Thumbnail for Pokemon Cards -->
             <div
+              v-if="isCardItem(item) && item.logoUrl"
+              class="o-command-palette__item-portrait"
+            >
+              <img
+                :src="item.logoUrl"
+                :alt="item.title"
+                loading="lazy"
+                class="o-command-palette__item-portrait-img"
+              />
+            </div>
+
+            <!-- Standard Icon Box for Non-Cards -->
+            <div
+              v-else
               class="o-command-palette__item-icon-box"
               :style="{ borderColor: item.iconColor || brandColor }"
             >
@@ -152,9 +178,14 @@
             <div class="o-command-palette__item-body">
               <div class="o-command-palette__item-title-row">
                 <span class="o-command-palette__item-title">{{ item.title }}</span>
-                <span v-if="item.categoryLabel" class="o-command-palette__item-badge">
-                  {{ item.categoryLabel }}
-                </span>
+                <div class="o-command-palette__item-badges">
+                  <span v-if="item.badge" class="o-command-palette__item-price-badge">
+                    {{ item.badge }}
+                  </span>
+                  <span v-if="item.categoryLabel" class="o-command-palette__item-badge">
+                    {{ item.categoryLabel }}
+                  </span>
+                </div>
               </div>
               <span v-if="item.subtitle" class="o-command-palette__item-subtitle">
                 {{ item.subtitle }}
@@ -204,6 +235,9 @@ import { useCommandPaletteController } from './o-command-palette.controller';
 
 const props = withDefaults(defineProps<CommandPaletteProps>(), {
   modelValue: false,
+  query: undefined,
+  variant: 'modal',
+  hideHeader: false,
   items: undefined,
   categories: undefined,
   providers: undefined,
@@ -231,11 +265,25 @@ const {
   handleItemClick,
   handleKeydown,
   handleBackdropClick,
+  isCardItem,
+  getItemCardStyle,
   isComponent,
-  isSearching
+  isSearching,
+  closePalette,
+  openPalette
 } = useCommandPaletteController(props, emit);
+
+defineExpose({
+  inputRef,
+  isOpen,
+  search,
+  handleKeydown,
+  closePalette,
+  openPalette
+});
 </script>
 
 <style scoped lang="scss">
 @use './o-command-palette';
 </style>
+

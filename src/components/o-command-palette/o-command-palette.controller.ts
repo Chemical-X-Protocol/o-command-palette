@@ -58,9 +58,11 @@ export function useCommandPaletteController(
 
   const openPalette = () => {
     isOpen.value = true;
-    nextTick(() => {
-      inputRef.value?.focus();
-    });
+    if (!props.hideHeader) {
+      nextTick(() => {
+        inputRef.value?.focus();
+      });
+    }
   };
 
   const handleSelectCategory = (categoryId: string) => {
@@ -116,8 +118,22 @@ export function useCommandPaletteController(
 
   const handleBackdropClick = (event: MouseEvent) => {
     const isTargetBackdrop = event.target === event.currentTarget;
-    if (!isTargetBackdrop) return;
+    if (!isTargetBackdrop && props.variant !== 'dropdown') return;
     closePalette();
+  };
+
+  const isCardItem = (item: CommandItem): boolean => {
+    const isCardCategory = item.category === 'cards';
+    const hasImage = Boolean(item.logoUrl);
+    const hasCardLabel = item.categoryLabel?.toLowerCase().includes('card') ?? false;
+    return isCardCategory || (hasImage && hasCardLabel);
+  };
+
+  const getItemCardStyle = (item: CommandItem): Record<string, string> => {
+    if (!item.logoUrl) return {};
+    return {
+      '--card-bg-image': `url("${item.logoUrl}")`
+    };
   };
 
   const isComponent = (val: unknown): boolean => {
@@ -126,17 +142,32 @@ export function useCommandPaletteController(
   };
 
   // 5. Watchers
-  watch(search.query, () => {
+  watch(
+    () => props.query,
+    (newQuery) => {
+      if (newQuery !== undefined && newQuery !== search.query.value) {
+        search.query.value = newQuery;
+      }
+    },
+    { immediate: true }
+  );
+
+  watch(search.query, (newQuery) => {
     keyboard.resetIndex();
+    emit('update:query', newQuery);
   });
 
   watch(isOpen, (newVal) => {
     if (newVal) {
-      nextTick(() => {
-        inputRef.value?.focus();
-      });
+      if (!props.hideHeader) {
+        nextTick(() => {
+          inputRef.value?.focus();
+        });
+      }
     } else {
-      search.clearSearch();
+      if (props.query === undefined) {
+        search.clearSearch();
+      }
       keyboard.resetIndex();
     }
   });
@@ -169,6 +200,8 @@ export function useCommandPaletteController(
     handleItemClick,
     handleKeydown,
     handleBackdropClick,
+    isCardItem,
+    getItemCardStyle,
     isComponent,
     isSearching: search.isSearching
   };
