@@ -2,6 +2,7 @@ import OCommandPalette from './o-command-palette.vue';
 export * from './types.d';
 export {
   useCommandPaletteController,
+  usePaletteSearch,
   usePaletteModal,
   useCommandPresentation,
   useCommandActions,
