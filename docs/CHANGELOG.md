@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- `useTimeoutFn`: Self-cleaning timer composable adhering to Chemical X timer discipline with automatic lifecycle disposal via `onScopeDispose`.
+- `useTimeoutFn`: Self-cleaning timer composable adhering to Chemical X timer discipline with automatic lifecycle disposal via `onScopeDispose` and returning lifecycle cleanup disposers upon invocation.
 - Domain composables extracted from `useCommandPaletteController`: `usePaletteSearch`, `usePaletteModal`, `useCommandPresentation`, `useCommandActions`.
 
 ### Changed
