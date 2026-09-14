@@ -2,13 +2,15 @@
  * Chemical X Protocol: Command Palette & Search Domain Types
  */
 
+import type { Component } from 'vue';
+
 export interface CommandItem {
   readonly id: string;
   readonly title: string;
   readonly subtitle?: string;
   readonly category: string;
   readonly categoryLabel: string;
-  readonly icon?: string | any;
+  readonly icon?: string | Component | Record<string, unknown>;
   readonly iconColor?: string;
   readonly logoUrl?: string;
   readonly badge?: string;
@@ -27,7 +29,7 @@ export interface CommandItem {
 export interface CommandCategory {
   readonly id: string;
   readonly label: string;
-  readonly icon?: string | any;
+  readonly icon?: string | Component | Record<string, unknown>;
 }
 
 export interface SearchProvider {

@@ -230,8 +230,12 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue';
 import type { CommandPaletteProps, CommandPaletteEmits } from './types';
-import { useCommandPaletteController } from './o-command-palette.controller';
+import {
+  useCommandPaletteController,
+  isComponent
+} from './o-command-palette.controller';
 
 const props = withDefaults(defineProps<CommandPaletteProps>(), {
   modelValue: false,
@@ -250,28 +254,26 @@ const props = withDefaults(defineProps<CommandPaletteProps>(), {
 const emit = defineEmits<CommandPaletteEmits>();
 
 const {
-  inputRef,
-  dialogRef,
-  isOpen,
+  modal,
   search,
   keyboard,
-  availableCategories,
-  brandColor,
-  placeholderText,
-  hasSearchQuery,
-  hasFilteredResults,
+  presentation,
+  actions
+} = useCommandPaletteController(props, emit);
+
+const { isOpen, inputRef, dialogRef, openPalette, closePalette } = modal;
+const { brandColor, placeholderText, availableCategories, isCardItem, getItemCardStyle } = presentation;
+const {
   handleSelectCategory,
   handleItemHover,
   handleItemClick,
   handleKeydown,
-  handleBackdropClick,
-  isCardItem,
-  getItemCardStyle,
-  isComponent,
-  isSearching,
-  closePalette,
-  openPalette
-} = useCommandPaletteController(props, emit);
+  handleBackdropClick
+} = actions;
+
+const isSearching = search.isSearching;
+const hasSearchQuery = computed(() => search.query.value.length > 0);
+const hasFilteredResults = computed(() => search.filteredItems.value.length > 0);
 
 defineExpose({
   inputRef,

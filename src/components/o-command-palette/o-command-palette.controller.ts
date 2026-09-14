@@ -5,58 +5,38 @@ import { useCommandRegistry } from '../../composables/useCommandRegistry';
 import { useCommandSearch } from '../../composables/useCommandSearch';
 import { useKeyboardNavigation } from '../../composables/useKeyboardNavigation';
 
-export function useCommandPaletteController(
-  props: CommandPaletteProps,
-  emit: CommandPaletteEmits
-) {
-  // 1. Composables & Stores
-  const registry = useCommandRegistry();
-  const allItems = computed(() => props.items ?? registry.commands.value);
-  const allProviders = computed(() => [
-    ...(props.providers ?? []),
-    ...registry.providers.value
-  ]);
-  const search = useCommandSearch(allItems, allProviders);
-  const keyboard = useKeyboardNavigation();
+export const isComponent = (val: unknown): boolean => {
+  if (!val) return false;
+  return typeof val === 'object' || typeof val === 'function';
+};
 
-  // 2. Reactive Primitives
+/**
+ * Palette Modal Domain Composable (3-5 property return limit)
+ */
+export function usePaletteModal(
+  props: CommandPaletteProps,
+  emit: CommandPaletteEmits,
+  search: ReturnType<typeof useCommandSearch>,
+  keyboard: ReturnType<typeof useKeyboardNavigation>
+) {
   const inputRef: Ref<HTMLInputElement | null> = ref(null);
   const dialogRef: Ref<HTMLElement | null> = ref(null);
 
-  // 3. Computed State & 2-Stage Atomic Booleans
   const isOpen = computed({
     get: () => props.modelValue ?? false,
     set: (val: boolean) => emit('update:modelValue', val)
   });
 
-  const availableCategories = computed<CommandCategory[]>(() => {
-    if (props.categories && props.categories.length > 0) {
-      return props.categories;
-    }
-    return [
-      { id: 'all', label: 'All' },
-      { id: 'pages', label: 'Pages' },
-      { id: 'actions', label: 'Actions' }
-    ];
-  });
-
-  const brandColor = computed(() => props.brandColor || '#62c9ff');
-  const shortcutLabel = computed(() => props.shortcutLabel || 'Cmd+K');
-  const placeholderText = computed(
-    () => props.placeholder || `Search commands and pages (${shortcutLabel.value})...`
-  );
-
-  const hasSearchQuery = computed(() => search.query.value.length > 0);
-  const totalItemCount = computed(() => search.filteredItems.value.length);
-  const hasFilteredResults = computed(() => totalItemCount.value > 0);
-
-  // 4. Helper Methods & Actions
-  const closePalette = () => {
+  const closePalette = (): void => {
     isOpen.value = false;
+    if (props.query === undefined) {
+      search.clearSearch();
+    }
+    keyboard.resetIndex();
     emit('close');
   };
 
-  const openPalette = () => {
+  const openPalette = (): void => {
     isOpen.value = true;
     if (!props.hideHeader) {
       nextTick(() => {
@@ -65,17 +45,87 @@ export function useCommandPaletteController(
     }
   };
 
-  const handleSelectCategory = (categoryId: string) => {
+  return {
+    isOpen,
+    inputRef,
+    dialogRef,
+    openPalette,
+    closePalette
+  };
+}
+
+/**
+ * Command Presentation Domain Composable (3-5 property return limit)
+ */
+export function useCommandPresentation(props: CommandPaletteProps) {
+  const brandColor = computed(() => props.brandColor || '#62c9ff');
+  const shortcutLabel = computed(() => props.shortcutLabel || 'Cmd+K');
+  const placeholderText = computed(
+    () => props.placeholder || `Search commands and pages (${shortcutLabel.value})...`
+  );
+
+  const availableCategories = computed<CommandCategory[]>(() => {
+    const hasCustomCategories = Boolean(props.categories && props.categories.length > 0);
+    if (hasCustomCategories) {
+      return props.categories!;
+    }
+    return [
+      { id: 'all', label: 'All' },
+      { id: 'pages', label: 'Pages' },
+      { id: 'actions', label: 'Actions' }
+    ];
+  });
+
+  const isCardItem = (item: CommandItem): boolean => {
+    const isCardCategory = item.category === 'cards';
+    const hasImage = Boolean(item.logoUrl);
+    const hasCardLabel = item.categoryLabel?.toLowerCase().includes('card') ?? false;
+    const isVisualCard = hasImage && hasCardLabel;
+    return isCardCategory || isVisualCard;
+  };
+
+  const getItemCardStyle = (item: CommandItem): Record<string, string> => {
+    if (!item.logoUrl) return {};
+    return {
+      '--card-bg-image': `url("${item.logoUrl}")`
+    };
+  };
+
+  return {
+    brandColor,
+    placeholderText,
+    availableCategories,
+    isCardItem,
+    getItemCardStyle
+  };
+}
+
+export interface CommandActionsOptions {
+  readonly props: CommandPaletteProps;
+  readonly emit: CommandPaletteEmits;
+  readonly search: ReturnType<typeof useCommandSearch>;
+  readonly keyboard: ReturnType<typeof useKeyboardNavigation>;
+  readonly registry: ReturnType<typeof useCommandRegistry>;
+  readonly closePalette: () => void;
+}
+
+/**
+ * Command Actions Domain Composable (3-5 property return limit)
+ */
+export function useCommandActions(options: CommandActionsOptions) {
+  const { props, emit, search, keyboard, registry, closePalette } = options;
+
+  const handleSelectCategory = (categoryId: string): void => {
     search.selectedCategory.value = categoryId;
     keyboard.resetIndex();
   };
 
-  const handleItemHover = (index: number) => {
+  const handleItemHover = (index: number): void => {
     keyboard.activeIndex.value = index;
   };
 
-  const handleExecuteActive = async () => {
-    const hasItems = hasFilteredResults.value;
+  const handleExecuteActive = async (): Promise<void> => {
+    const hasItems = search.filteredItems.value.length > 0;
     if (!hasItems) return;
 
     const currentItem = search.filteredItems.value[keyboard.activeIndex.value];
@@ -90,7 +140,7 @@ export function useCommandPaletteController(
     }
   };
 
-  const handleItemClick = async (item: CommandItem) => {
+  const handleItemClick = async (item: CommandItem): Promise<void> => {
     emit('select', item);
     emit('execute', item);
 
@@ -100,48 +150,81 @@ export function useCommandPaletteController(
     }
   };
 
-  const handleKeydown = (event: KeyboardEvent) => {
+  const handleKeydown = (event: KeyboardEvent): void => {
+    const totalCount = search.filteredItems.value.length;
+
     if (event.key === 'ArrowDown') {
       event.preventDefault();
-      keyboard.selectNext(totalItemCount.value);
-    } else if (event.key === 'ArrowUp') {
+      keyboard.selectNext(totalCount);
+      return;
+    }
+
+    if (event.key === 'ArrowUp') {
       event.preventDefault();
-      keyboard.selectPrevious(totalItemCount.value);
-    } else if (event.key === 'Enter') {
+      keyboard.selectPrevious(totalCount);
+      return;
+    }
+
+    if (event.key === 'Enter') {
       event.preventDefault();
       handleExecuteActive();
-    } else if (event.key === 'Escape') {
+      return;
+    }
+
+    if (event.key === 'Escape') {
       event.preventDefault();
       closePalette();
+      return;
     }
   };
 
-  const handleBackdropClick = (event: MouseEvent) => {
+  const handleBackdropClick = (event: MouseEvent): void => {
     const isTargetBackdrop = event.target === event.currentTarget;
-    if (!isTargetBackdrop && props.variant !== 'dropdown') return;
+    const isDropdown = props.variant === 'dropdown';
+    const canClose = isTargetBackdrop || isDropdown;
+
+    if (!canClose) return;
     closePalette();
   };
 
-  const isCardItem = (item: CommandItem): boolean => {
-    const isCardCategory = item.category === 'cards';
-    const hasImage = Boolean(item.logoUrl);
-    const hasCardLabel = item.categoryLabel?.toLowerCase().includes('card') ?? false;
-    return isCardCategory || (hasImage && hasCardLabel);
+  return {
+    handleSelectCategory,
+    handleItemHover,
+    handleItemClick,
+    handleKeydown,
+    handleBackdropClick
   };
+}
 
-  const getItemCardStyle = (item: CommandItem): Record<string, string> => {
-    if (!item.logoUrl) return {};
-    return {
-      '--card-bg-image': `url("${item.logoUrl}")`
-    };
-  };
+/**
+ * Coordinated Command Palette Controller (3-5 property return limit)
+ */
+export function useCommandPaletteController(
+  props: CommandPaletteProps,
+  emit: CommandPaletteEmits
+) {
+  // 1. Composables & Stores
+  const registry = useCommandRegistry();
+  const allItems = computed(() => props.items ?? registry.commands.value);
+  const allProviders = computed(() => [
+    ...(props.providers ?? []),
+    ...registry.providers.value
+  ]);
 
-  const isComponent = (val: unknown): boolean => {
-    if (!val) return false;
-    return typeof val === 'object' || typeof val === 'function';
-  };
+  const search = useCommandSearch(allItems, allProviders);
+  const keyboard = useKeyboardNavigation();
+  const modal = usePaletteModal(props, emit, search, keyboard);
+  const presentation = useCommandPresentation(props);
+  const actions = useCommandActions({
+    props,
+    emit,
+    search,
+    keyboard,
+    registry,
+    closePalette: modal.closePalette
+  });
 
-  // 5. Watchers
+  // 2. Watchers
   watch(
     () => props.query,
     (newQuery) => {
@@ -157,52 +240,20 @@ export function useCommandPaletteController(
     emit('update:query', newQuery);
   });
 
-  watch(isOpen, (newVal) => {
-    if (newVal) {
-      if (!props.hideHeader) {
-        nextTick(() => {
-          inputRef.value?.focus();
-        });
-      }
-    } else {
-      if (props.query === undefined) {
-        search.clearSearch();
-      }
-      keyboard.resetIndex();
-    }
-  });
-
-  // 6. Global Shortcut Registration
+  // 3. Global Shortcut Setup
   keyboard.setupGlobalShortcut(() => {
-    if (isOpen.value) {
-      closePalette();
+    if (modal.isOpen.value) {
+      modal.closePalette();
     } else {
-      openPalette();
+      modal.openPalette();
     }
   });
 
   return {
-    inputRef,
-    dialogRef,
-    isOpen,
+    modal,
     search,
     keyboard,
-    availableCategories,
-    brandColor,
-    shortcutLabel,
-    placeholderText,
-    hasSearchQuery,
-    hasFilteredResults,
-    closePalette,
-    openPalette,
-    handleSelectCategory,
-    handleItemHover,
-    handleItemClick,
-    handleKeydown,
-    handleBackdropClick,
-    isCardItem,
-    getItemCardStyle,
-    isComponent,
-    isSearching: search.isSearching
+    presentation,
+    actions
   };
 }

@@ -1,5 +1,6 @@
-import { ref, computed, watch, toValue, onScopeDispose, getCurrentScope, type MaybeRefOrGetter } from 'vue';
+import { ref, computed, watch, toValue, type MaybeRefOrGetter } from 'vue';
 import type { CommandItem, SearchProvider } from '../types';
+import { useTimeoutFn } from './useTimeoutFn';
 
 export function useCommandSearch(
   sourceItems: MaybeRefOrGetter<CommandItem[]>,
@@ -10,7 +11,6 @@ export function useCommandSearch(
   const selectedCategory = ref('all');
   const providerItems = ref<CommandItem[]>([]);
   const isSearching = ref(false);
-  let debounceTimer: ReturnType<typeof setTimeout> | null = null;
   let activeSearchId = 0;
 
   // 2. Named Predicates & Filter Helpers
@@ -59,16 +59,13 @@ export function useCommandSearch(
       return staticItems;
     }
 
-    // Merge and deduplicate by item id
     const seenIds = new Set(staticItems.map((item) => item.id));
     const uniqueDynamic = dynamicItems.filter((item) => !seenIds.has(item.id));
     return [...staticItems, ...uniqueDynamic];
   });
 
-  const hasResults = computed(() => filteredItems.value.length > 0);
-
-  // 4. Helper Methods & Actions
-  const executeProviderSearch = async (searchTerm: string, searchId: number) => {
+  // 4. Self-Cleaning Timer & Actions
+  const executeProviderSearch = async (searchTerm: string, searchId: number): Promise<void> => {
     const registeredProviders = toValue(providers) || [];
     const hasProviders = registeredProviders.length > 0;
     const isSufficientLength = searchTerm.trim().length >= 2;
@@ -96,7 +93,7 @@ export function useCommandSearch(
       const resultsPromises = targetProviders.map(async (provider) => {
         try {
           return await provider.query(searchTerm);
-        } catch {
+        } catch (_error: unknown) {
           return [];
         }
       });
@@ -113,23 +110,24 @@ export function useCommandSearch(
     }
   };
 
-  const clearSearch = () => {
+  const { start: debounceSearch, stop: cancelDebounce } = useTimeoutFn(
+    (trimmed: string, searchId: number) => {
+      executeProviderSearch(trimmed, searchId);
+    },
+    180
+  );
+
+  const clearSearch = (): void => {
     query.value = '';
     selectedCategory.value = 'all';
     providerItems.value = [];
     isSearching.value = false;
-    if (debounceTimer) {
-      clearTimeout(debounceTimer);
-      debounceTimer = null;
-    }
+    cancelDebounce();
   };
 
   // 5. Watchers
   watch([query, selectedCategory], ([newQuery]) => {
-    if (debounceTimer) {
-      clearTimeout(debounceTimer);
-      debounceTimer = null;
-    }
+    cancelDebounce();
 
     const currentSearchId = ++activeSearchId;
     const trimmed = newQuery.trim();
@@ -141,27 +139,14 @@ export function useCommandSearch(
     }
 
     isSearching.value = true;
-    debounceTimer = setTimeout(() => {
-      executeProviderSearch(trimmed, currentSearchId);
-    }, 180);
+    debounceSearch(trimmed, currentSearchId);
   });
-
-  // 6. Autonomous Lifecycle Teardown
-  if (getCurrentScope()) {
-    onScopeDispose(() => {
-      if (debounceTimer) {
-        clearTimeout(debounceTimer);
-        debounceTimer = null;
-      }
-    });
-  }
 
   return {
     query,
     selectedCategory,
     filteredItems,
     isSearching,
-    hasResults,
     clearSearch
   };
 }

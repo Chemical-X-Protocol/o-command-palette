@@ -53,8 +53,7 @@ export function useCommandRegistry() {
       window.open(item.href!, item.target || '_self');
     }
 
-    const shouldClose = item.closeOnSelect !== false;
-    return shouldClose;
+    return item.closeOnSelect !== false;
   };
 
   return {
