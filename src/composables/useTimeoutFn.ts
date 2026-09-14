@@ -2,13 +2,14 @@ import { ref, onScopeDispose, getCurrentScope, type Ref } from 'vue';
 
 export interface UseTimeoutFnReturn<TArgs extends unknown[] = unknown[]> {
   readonly isPending: Readonly<Ref<boolean>>;
-  readonly start: (...args: TArgs) => void;
+  readonly start: (...args: TArgs) => () => void;
   readonly stop: () => void;
 }
 
 /**
  * Self-cleaning timer composable adhering to Chemical X timer discipline.
- * Automatically disposes timers when the calling component/composable unmounts.
+ * Automatically disposes timers when the calling component/composable unmounts,
+ * and returns a cleanup disposer function on invocation.
  */
 export function useTimeoutFn<TArgs extends unknown[] = unknown[]>(
   cb: (...args: TArgs) => void,
@@ -25,7 +26,7 @@ export function useTimeoutFn<TArgs extends unknown[] = unknown[]>(
     isPending.value = false;
   };
 
-  const start = (...args: TArgs): void => {
+  const start = (...args: TArgs): (() => void) => {
     stop();
     isPending.value = true;
     timer = setTimeout(() => {
@@ -33,6 +34,7 @@ export function useTimeoutFn<TArgs extends unknown[] = unknown[]>(
       timer = null;
       cb(...args);
     }, interval);
+    return stop;
   };
 
   if (getCurrentScope()) {
