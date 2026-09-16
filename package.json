@@ -2,6 +2,7 @@
   "name": "@chemx/o-command-palette",
   "version": "0.1.0",
   "description": "Chemical X Protocol: Universal command palette and site-indexing drop-in organism",
+  "license": "MIT",
   "type": "module",
   "files": [
     "dist",
