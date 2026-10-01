@@ -116,7 +116,7 @@
             class="o-command-palette__item"
             :class="{
               'o-command-palette__item--active': index === keyboard.activeIndex.value,
-              'o-command-palette__item--with-card-bg': isCardItem(item) && Boolean(item.logoUrl)
+              'o-command-palette__item--with-card-bg': isCardItem(item) && hasItemImage(item)
             }"
             :style="getItemCardStyle(item)"
             @mouseenter="handleItemHover(index)"
@@ -124,14 +124,15 @@
           >
             <!-- Portrait Card Thumbnail for Pokemon Cards -->
             <div
-              v-if="isCardItem(item) && item.logoUrl"
+              v-if="isCardItem(item) && hasItemImage(item)"
               class="o-command-palette__item-portrait"
             >
               <img
-                :src="item.logoUrl"
+                :src="resolveItemImage(item)"
                 :alt="item.title"
                 loading="lazy"
                 class="o-command-palette__item-portrait-img"
+                @error="handleImageError(item)"
               />
             </div>
 
@@ -143,10 +144,11 @@
             >
               <slot name="item-icon" :item="item">
                 <img
-                  v-if="item.logoUrl"
-                  :src="item.logoUrl"
+                  v-if="hasItemImage(item)"
+                  :src="resolveItemImage(item)"
                   alt=""
                   class="o-command-palette__item-logo"
+                  @error="handleImageError(item)"
                 />
                 <component
                   :is="item.icon"
@@ -267,6 +269,9 @@ const {
   handleBackdropClick,
   isCardItem,
   getItemCardStyle,
+  resolveItemImage,
+  hasItemImage,
+  handleImageError,
   isComponent,
   isSearching,
   closePalette,

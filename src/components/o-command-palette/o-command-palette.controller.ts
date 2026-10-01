@@ -129,10 +129,38 @@ export function useCommandPaletteController(
     return isCardCategory || (hasImage && hasCardLabel);
   };
 
+  // Remote thumbnails can 404/403 (CDN derivatives get retired). Degrade to a
+  // smaller variant once, then drop the image so the icon box renders instead
+  // of a broken-image glyph.
+  const imageFallbacks = ref<Record<string, string>>({});
+  const failedImages = ref<Set<string>>(new Set());
+
+  const resolveItemImage = (item: CommandItem): string => {
+    const original = item.logoUrl ?? '';
+    return imageFallbacks.value[original] ?? original;
+  };
+
+  const hasItemImage = (item: CommandItem): boolean => {
+    if (!item.logoUrl) return false;
+    return !failedImages.value.has(item.logoUrl);
+  };
+
+  const handleImageError = (item: CommandItem): void => {
+    const original = item.logoUrl;
+    if (!original) return;
+    const current = imageFallbacks.value[original] ?? original;
+    const downgraded = current.replace(/_400w\.jpg$/i, '_200w.jpg');
+    if (downgraded !== current) {
+      imageFallbacks.value = { ...imageFallbacks.value, [original]: downgraded };
+      return;
+    }
+    failedImages.value = new Set(failedImages.value).add(original);
+  };
+
   const getItemCardStyle = (item: CommandItem): Record<string, string> => {
-    if (!item.logoUrl) return {};
+    if (!hasItemImage(item)) return {};
     return {
-      '--card-bg-image': `url("${item.logoUrl}")`
+      '--card-bg-image': `url("${resolveItemImage(item)}")`
     };
   };
 
@@ -202,6 +230,9 @@ export function useCommandPaletteController(
     handleBackdropClick,
     isCardItem,
     getItemCardStyle,
+    resolveItemImage,
+    hasItemImage,
+    handleImageError,
     isComponent,
     isSearching: search.isSearching
   };
