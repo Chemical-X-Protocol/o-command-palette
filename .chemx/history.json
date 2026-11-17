@@ -838,5 +838,115 @@
         "critical": 0
       }
     }
+  },
+  {
+    "id": "audit-1794827572051",
+    "timestamp": "2026-11-16T11:12:52.051Z",
+    "scope": "src",
+    "isPartial": false,
+    "ruleset": 11,
+    "scoreModel": 2,
+    "health": {
+      "score": 92,
+      "grade": "A",
+      "label": "Highly Modular"
+    },
+    "aiSlop": {
+      "score": 100,
+      "grade": "A+",
+      "label": "Pure Artisanal",
+      "violationsCount": 1
+    },
+    "metrics": {
+      "scannedFiles": 7,
+      "totalLoc": 836,
+      "avgLoc": 119,
+      "moleculeCount": 0,
+      "moleculeCompliantCount": 0,
+      "moleculeCompliantPct": 100,
+      "moleculeLineLimit": 250,
+      "hookCount": 19
+    },
+    "violations": {
+      "total": 25,
+      "critical": 0,
+      "high": 1,
+      "medium": 10,
+      "low": 14
+    },
+    "monoliths": {
+      "total": 0,
+      "extreme": 0,
+      "severe": 0,
+      "warning": 0
+    },
+    "tokens": {
+      "estimatedTokens": 6713,
+      "estimatedExcessTokens": 0,
+      "potentialSavingsPct": 0,
+      "riskLevel": "LOW",
+      "pricingModel": "Frontier Blended ($3.00/1M)",
+      "costPerMillion": 3,
+      "excessCostPerPass": 0,
+      "weeklyWastePerDev": 0,
+      "monthlyWastePerDev": 0
+    },
+    "pillars": {
+      "Line Budgets & Monolith Decomposition": {
+        "status": "PASSED",
+        "violations": 0,
+        "critical": 0
+      },
+      "Control Flow & Boolean Logic": {
+        "status": "WARN",
+        "violations": 17,
+        "critical": 0
+      },
+      "Reactivity & Composable Contracts": {
+        "status": "WARN",
+        "violations": 3,
+        "critical": 0
+      },
+      "Type Architecture & Data Integrity": {
+        "status": "PASSED",
+        "violations": 0,
+        "critical": 0
+      },
+      "Design System & Styling Hygiene": {
+        "status": "WARN",
+        "violations": 4,
+        "critical": 0
+      },
+      "Timers & Macro-Task Discipline": {
+        "status": "PASSED",
+        "violations": 0,
+        "critical": 0
+      },
+      "Global Hygiene & Typography": {
+        "status": "PASSED",
+        "violations": 0,
+        "critical": 0
+      },
+      "Accessibility & Semantic Integrity": {
+        "status": "PASSED",
+        "violations": 0,
+        "critical": 0
+      },
+      "Security & Content Safety": {
+        "status": "PASSED",
+        "violations": 0,
+        "critical": 0
+      },
+      "Testing Discipline": {
+        "status": "PASSED",
+        "violations": 0,
+        "critical": 0
+      },
+      "Naming Conventions": {
+        "status": "PASSED",
+        "violations": 0,
+        "critical": 0
+      }
+    }
   }
 ]
