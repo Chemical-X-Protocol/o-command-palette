@@ -1,6 +1,75 @@
 import { ref, computed, watch, toValue, onScopeDispose, getCurrentScope, type MaybeRefOrGetter } from 'vue';
 import type { CommandItem, SearchProvider } from '../types';
 
+interface MatchScoreContext {
+  readonly trimmedQuery: string;
+  readonly queryTokens: readonly string[];
+  readonly title: string;
+  readonly categoryLabel: string;
+  readonly route: string;
+  readonly keywordsList: readonly string[];
+  readonly keywordsText: string;
+}
+
+const SCORE_TIERS: ReadonlyArray<{
+  readonly weight: number;
+  readonly matches: (ctx: MatchScoreContext) => boolean;
+}> = [
+  { weight: 100, matches: (ctx) => ctx.title === ctx.trimmedQuery },
+  { weight: 80, matches: (ctx) => ctx.title.startsWith(ctx.trimmedQuery) },
+  { weight: 65, matches: (ctx) => ctx.queryTokens.every((t) => ctx.title.includes(t)) },
+  { weight: 60, matches: (ctx) => ctx.keywordsList.some((kw) => kw === ctx.trimmedQuery) },
+  {
+    weight: 45,
+    matches: (ctx) => {
+      const scope = `${ctx.title} ${ctx.categoryLabel} ${ctx.keywordsText}`;
+      return ctx.queryTokens.some((t) => ctx.title.includes(t)) && ctx.queryTokens.every((t) => scope.includes(t));
+    }
+  },
+  {
+    weight: 35,
+    matches: (ctx) => {
+      const scope = `${ctx.keywordsText} ${ctx.categoryLabel} ${ctx.route}`;
+      return ctx.queryTokens.every((t) => scope.includes(t));
+    }
+  }
+];
+
+/**
+ * Computes weighted relevance score for a command item against a user query.
+ * Returns 0 when any query token is absent from the searchable fields.
+ */
+export function scoreCommandMatch(item: CommandItem, rawQuery: string): number {
+  const trimmedQuery = rawQuery.trim().toLowerCase();
+  if (!trimmedQuery) return 1;
+
+  const title = item.title.toLowerCase();
+  const subtitle = (item.subtitle || '').toLowerCase();
+  const category = item.category.toLowerCase();
+  const categoryLabel = (item.categoryLabel || '').toLowerCase();
+  const route = (item.route || '').toLowerCase();
+  const keywordsList = (item.keywords || []).map((k) => k.toLowerCase());
+  const keywordsText = keywordsList.join(' ');
+  const haystack = `${title} ${subtitle} ${category} ${categoryLabel} ${route} ${keywordsText}`;
+
+  const queryTokens = trimmedQuery.split(/\s+/).filter(Boolean);
+  const allTokensMatch = queryTokens.every((token) => haystack.includes(token));
+  if (!allTokensMatch) return 0;
+
+  const ctx: MatchScoreContext = {
+    trimmedQuery,
+    queryTokens,
+    title,
+    categoryLabel,
+    route,
+    keywordsList,
+    keywordsText
+  };
+
+  const matchedTier = SCORE_TIERS.find((tier) => tier.matches(ctx));
+  return matchedTier ? matchedTier.weight : 20;
+}
+
 export function useCommandSearch(
   sourceItems: MaybeRefOrGetter<CommandItem[]>,
   providers?: MaybeRefOrGetter<SearchProvider[]>
@@ -19,34 +88,26 @@ export function useCommandSearch(
     return item.category === categoryId;
   };
 
-  const matchesKeywordToken = (token: string, searchHaystack: string): boolean => {
-    return searchHaystack.includes(token);
-  };
-
-  const matchesSearchQuery = (item: CommandItem, rawQuery: string): boolean => {
-    const trimmedQuery = rawQuery.trim().toLowerCase();
-    if (!trimmedQuery) return true;
-
-    const keywords = (item.keywords || []).join(' ').toLowerCase();
-    const title = item.title.toLowerCase();
-    const subtitle = (item.subtitle || '').toLowerCase();
-    const category = item.category.toLowerCase();
-    const haystack = `${title} ${subtitle} ${category} ${keywords}`;
-
-    const queryTokens = trimmedQuery.split(/\s+/).filter(Boolean);
-    return queryTokens.every((token) => matchesKeywordToken(token, haystack));
-  };
-
   const isMatchingItem = (item: CommandItem): boolean => {
     const isCategoryMatched = matchesCategory(item, selectedCategory.value);
-    const isQueryMatched = matchesSearchQuery(item, query.value);
-    return isCategoryMatched && isQueryMatched;
+    if (!isCategoryMatched) return false;
+    return scoreCommandMatch(item, query.value) > 0;
+  };
+
+  const sortByScore = (items: CommandItem[]): CommandItem[] => {
+    const trimmed = query.value.trim();
+    if (!trimmed) return items;
+
+    return items
+      .map((item, idx) => ({ item, idx, score: scoreCommandMatch(item, trimmed) }))
+      .sort((a, b) => (b.score !== a.score ? b.score - a.score : a.idx - b.idx))
+      .map((entry) => entry.item);
   };
 
   // 3. Computed State & 2-Stage Atomic Booleans
   const staticFilteredItems = computed(() => {
     const items = toValue(sourceItems);
-    return items.filter(isMatchingItem);
+    return sortByScore(items.filter(isMatchingItem));
   });
 
   const filteredItems = computed(() => {
@@ -62,7 +123,7 @@ export function useCommandSearch(
     // Merge and deduplicate by item id
     const seenIds = new Set(staticItems.map((item) => item.id));
     const uniqueDynamic = dynamicItems.filter((item) => !seenIds.has(item.id));
-    return [...staticItems, ...uniqueDynamic];
+    return sortByScore([...staticItems, ...uniqueDynamic]);
   });
 
   const hasResults = computed(() => filteredItems.value.length > 0);

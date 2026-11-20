@@ -12,6 +12,8 @@ export interface CommandItem {
   readonly iconColor?: string;
   readonly logoUrl?: string;
   readonly badge?: string;
+  readonly shortcut?: string;
+  readonly isExternal?: boolean;
   readonly keywords?: string[];
 
   // Action / Navigation Targets
